@@ -154,6 +154,8 @@ cython_debug/
 
 .idea/
 *.exe
+*.mp3
+_t.py
 
 # PyCharm
 #  JetBrains specific template is maintained in a separate JetBrains.gitignore that can

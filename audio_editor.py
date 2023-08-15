@@ -1,9 +1,11 @@
 import subprocess
 import pathlib
+import ffmpeg
+import datetime
 
 
 inp = 'C:\\Users\\Степан\\Desktop\\Python\\Audio-Editor\\test.mp3'
-outp = 'C:\\Users\\Степан\\Desktop\\Python\\Audio-Editor\\test_1.mp3'
+output = 'C:\\Users\\Степан\\Desktop\\Python\\Audio-Editor\\test_1.mp3'
 
 
 def show_commands():
@@ -18,11 +20,11 @@ def show_edition_commands():
     print('0   - Завершить работу')
     print('1   - Изменить громкость')
     print('2   - Изменить скорость')
-    print('3   - Вырезать фрагмент')
+    print('3   - Обрезать аудиозапись')
     print('4   - Склеить фрагменты')
     print('5   - Изменить конкретную часть текущего аудио')
     print('r   - «Развернуть» аудиозапись (реверс)')
-    print('s   - Сохранить аудио')
+    # print('s   - Сохранить аудио')
 
 
 def read_command(commands):
@@ -41,7 +43,7 @@ def _read_speed():
         try:
             print('Введите новую скорость воспроизведения в диапозоне от 0.5 до 2.0')
             speed = float(input())
-        except ValueError as e:
+        except ValueError:
             print('Неверно введено значение! (Попробуйте заменить «,» на «.»)')
         else:
             if 0.5 <= speed <= 2.0:
@@ -59,7 +61,7 @@ def _read_volume():
         try:
             print('Введите новую громкость воспроизведения (значение >= 0)')
             volume = float(input())
-        except ValueError as e:
+        except ValueError:
             print('Неверно введено значение! (Попробуйте заменить «,» на «.»)')
         else:
             if volume > 0:
@@ -69,12 +71,53 @@ def _read_volume():
     return volume
 
 
+def _read_time(message, limit):
+    success = False
+    time = '00:00:00'
+    while not success:
+        try:
+            print(f'{message}\nФормат - hh:mm:ss или hh:mm:ss.ms')
+            time = input().split('.')
+            parsed_time = datetime.time.fromisoformat(time[0])
+        except ValueError:
+            print('Неверно введено значение!')
+        else:
+            right_format = False
+            ms = 0
+            if len(time) == 1:
+                right_format = True
+            elif len(time) == 2:
+                try:
+                    ms = int(time[1])
+                    right_format = True
+                except ValueError:
+                    print('Неверно введено значение!')
+            elif len(time) > 2:
+                print('Неверно введено значение!')
+
+            if right_format:
+                timedelta = datetime.timedelta(hours=parsed_time.hour, minutes=parsed_time.minute,
+                                               seconds=parsed_time.second, milliseconds=ms * 100)
+                seconds = timedelta.total_seconds()
+
+                if seconds <= limit:
+                    success = True
+                else:
+                    print('Неверно указан диапазон!')
+    return '.'.join(time)
+
+
+def get_length(audio):
+    result = ffmpeg.probe(audio)['format']['duration']
+    return float(result)
+
+
 class AudioEditor:
     def __init__(self):
         self.running = False
         self.editing = False
         self.audio = None
-        self.output_name = outp
+        self.output_name = output
 
         self.menu_commands = {
             's': self.edition,
@@ -88,6 +131,7 @@ class AudioEditor:
             '0': self.stop,
             '1': self.change_volume,
             '2': self.change_speed,
+            '3': self.trim,
 
             'r': self.reverse
         }
@@ -126,6 +170,16 @@ class AudioEditor:
                                  f'atempo={speed}', self.output_name])
         proc.wait()
         print('Скорость успешно изменена\n')
+
+    def trim(self):
+        length = get_length(self.audio)
+        time = datetime.timedelta(seconds=int(length), milliseconds=round(length % 1 * 1000))
+        start = _read_time(f'Введите время начала (общее время аудио: {time})', length)
+        end = _read_time(f'Введите время конца (общее время аудио: {time})', length)
+        proc = subprocess.Popen(['ffmpeg', '-loglevel', '-8', '-ss', start, '-i', self.audio, '-to',
+                                 end, self.output_name])
+        proc.wait()
+        print('Аудиозапись успешно обрезана\n')
 
     def reverse(self):
         proc = subprocess.Popen(['ffmpeg', '-loglevel', '-8', '-i', self.audio, '-af',
