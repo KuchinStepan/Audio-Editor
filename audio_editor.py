@@ -1,5 +1,4 @@
 import subprocess
-import pathlib
 import ffmpeg
 from audio_editor_dialogs import *
 from audio_data import *
@@ -91,6 +90,9 @@ class AudioEditor:
         self.edition_history.add(log)
         print('Аудиозапись успешно обрезана\n')
 
+    def merge(self):
+        pass
+
     def reverse(self):
         proc = subprocess.Popen(['ffmpeg', '-loglevel', '-8', '-i', self.audio, '-af',
                                  'areverse', self.output_name])
@@ -107,24 +109,15 @@ class AudioEditor:
         self.audio = 'test.mp3'
         self.edition_history = EditionHistory(self.audio)
         return
-        loaded = False
-        while not loaded:
-            print('Введите название аудиотрека (формат: .mp3, .wav) или напишите "m" чтобы вернуться в меню')
-            audio = input()
-            if audio == 'm':
-                self.back_to_menu()
-                break
-            p = pathlib.Path(audio)
-            if p.exists():
-                if audio.split('.')[-1] in ['mp3', 'wav']:
-                    self.audio = audio
-                    self.edition_history = EditionHistory(self.audio)
-                    print('Аудиотрек успешно загружен\n')
-                    loaded = True
-                else:
-                    print('Неверное разрешение аудиотрека! Попробуйте .mp3 или .wav')
-            else:
-                print(f'Аудиотрек {audio} не найден!')
+
+        audio = read_audio()
+        if audio == 'm':
+            self.back_to_menu()
+        else:
+            self.audio = audio
+            self.edition_history = EditionHistory(self.audio)
+            print('Аудиотрек успешно загружен\n')
+
 
     def edition(self):
         self.editing = True

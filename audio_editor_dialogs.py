@@ -1,4 +1,5 @@
 import datetime
+import pathlib
 
 
 def show_commands():
@@ -13,7 +14,7 @@ def show_edition_commands():
     print('1   - Изменить громкость')
     print('2   - Изменить скорость')
     print('3   - Обрезать аудиозапись')
-    print('4   - Склеить фрагменты')
+    print('4   - Склеить с другой аудиозаписью')
     print('5   - Изменить конкретную часть текущего аудио')
     print('r   - «Развернуть» аудиозапись (реверс)')
     print('hs  - Просмотреть историю изменений')
@@ -27,6 +28,23 @@ def read_command(commands):
             return command
         else:
             print('Неверно введена команда')
+
+
+def read_audio():
+    while True:
+        print('Введите название аудиотрека (формат: .mp3, .wav) или напишите "m" чтобы вернуться в меню')
+        audio = input()
+        if audio == 'm':
+            return audio
+        p = pathlib.Path(audio)
+        if p.exists():
+            if audio.split('.')[-1] in ['mp3', 'wav']:
+                print('Аудиотрек успешно загружен\n')
+                return audio
+            else:
+                print('Неверное разрешение аудиотрека! Попробуйте .mp3 или .wav')
+        else:
+            print(f'Аудиотрек {audio} не найден!')
 
 
 def read_speed():
