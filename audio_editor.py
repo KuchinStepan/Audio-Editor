@@ -2,6 +2,7 @@ import subprocess
 import pathlib
 import ffmpeg
 import datetime
+from audio_data import *
 
 
 inp = 'C:\\Users\\Степан\\Desktop\\Python\\Audio-Editor\\test.mp3'
@@ -10,7 +11,6 @@ output = 'C:\\Users\\Степан\\Desktop\\Python\\Audio-Editor\\test_1.mp3'
 
 def show_commands():
     print('s    - Начать редактирование')
-    print('hs   - Просмотреть историю изменений')
     print('l    - Продолжить незавершенное редактирование')
     print('0    - Завершить работу')
 
@@ -24,6 +24,7 @@ def show_edition_commands():
     print('4   - Склеить фрагменты')
     print('5   - Изменить конкретную часть текущего аудио')
     print('r   - «Развернуть» аудиозапись (реверс)')
+    print('hs  - Просмотреть историю изменений')
     # print('s   - Сохранить аудио')
 
 
@@ -108,6 +109,7 @@ def _read_time(message, limit):
 
 
 def get_length(audio):
+    ffmpeg.probe(audio)
     result = ffmpeg.probe(audio)['format']['duration']
     return float(result)
 
@@ -118,10 +120,10 @@ class AudioEditor:
         self.editing = False
         self.audio = None
         self.output_name = output
+        self.edition_history = EditionHistory('отсутствует')
 
         self.menu_commands = {
             's': self.edition,
-            'hs': 1,
             'l': 2,
             '0': self.stop
         }
@@ -133,7 +135,8 @@ class AudioEditor:
             '2': self.change_speed,
             '3': self.trim,
 
-            'r': self.reverse
+            'r': self.reverse,
+            'hs': self.show_history
         }
 
     def run(self):
@@ -162,6 +165,8 @@ class AudioEditor:
         proc = subprocess.Popen(['ffmpeg', '-loglevel', '-8', '-i', self.audio, '-af',
                                  f'volume={volume}', self.output_name])
         proc.wait()
+        log = Log(Actions.volume, volume=volume)
+        self.edition_history.add(log)
         print('Громкость успешно изменена\n')
 
     def change_speed(self):
@@ -169,6 +174,8 @@ class AudioEditor:
         proc = subprocess.Popen(['ffmpeg', '-loglevel', '-8', '-i', self.audio, '-af',
                                  f'atempo={speed}', self.output_name])
         proc.wait()
+        log = Log(Actions.speed, speed=speed)
+        self.edition_history.add(log)
         print('Скорость успешно изменена\n')
 
     def trim(self):
@@ -179,16 +186,25 @@ class AudioEditor:
         proc = subprocess.Popen(['ffmpeg', '-loglevel', '-8', '-ss', start, '-i', self.audio, '-to',
                                  end, self.output_name])
         proc.wait()
+        log = Log(Actions.trim, start=start, end=end)
+        self.edition_history.add(log)
         print('Аудиозапись успешно обрезана\n')
 
     def reverse(self):
         proc = subprocess.Popen(['ffmpeg', '-loglevel', '-8', '-i', self.audio, '-af',
                                  'areverse', self.output_name])
         proc.wait()
+        log = Log(Actions.reverse)
+        self.edition_history.add(log)
         print('Аудиозапись «развернута»\n')
+
+    def show_history(self):
+        self.edition_history.show()
+        print()
 
     def load_audio(self):
         self.audio = 'test.mp3'
+        self.edition_history = EditionHistory(self.audio)
         return
         loaded = False
         while not loaded:
@@ -201,6 +217,7 @@ class AudioEditor:
             if p.exists():
                 if audio.split('.')[-1] in ['mp3', 'wav']:
                     self.audio = audio
+                    self.edition_history = EditionHistory(self.audio)
                     print('Аудиотрек успешно загружен\n')
                     loaded = True
                 else:
