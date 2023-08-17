@@ -30,16 +30,18 @@ def read_command(commands):
             print('Неверно введена команда')
 
 
-def read_audio():
+def read_audio(for_merge=False):
+    message = ''
+    if for_merge:
+        message = ' второго'
     while True:
-        print('Введите название аудиотрека (формат: .mp3, .wav) или напишите "m" чтобы вернуться в меню')
+        print(f'Введите название{message} аудиотрека (формат: .mp3, .wav) или напишите "m" чтобы вернуться в меню')
         audio = input()
         if audio == 'm':
             return audio
         p = pathlib.Path(audio)
         if p.exists():
             if audio.split('.')[-1] in ['mp3', 'wav']:
-                print('Аудиотрек успешно загружен\n')
                 return audio
             else:
                 print('Неверное разрешение аудиотрека! Попробуйте .mp3 или .wav')
@@ -116,3 +118,16 @@ def read_time(message, limit):
                 else:
                     print('Неверно указан диапазон!')
     return '.'.join(time)
+
+
+def is_in_order():
+    success = False
+    while not success:
+        print('Склеить аудиозаписи в порядке их добавления(1) или обратном(2)?')
+        ans = input()
+        if ans.lower() == '1':
+            return True
+        elif ans.lower() == '2':
+            return False
+        else:
+            print('Неверно введена команда')

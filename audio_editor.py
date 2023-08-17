@@ -34,6 +34,7 @@ class AudioEditor:
             '1': self.change_volume,
             '2': self.change_speed,
             '3': self.trim,
+            '4': self.concat,
 
             'r': self.reverse,
             'hs': self.show_history
@@ -90,8 +91,24 @@ class AudioEditor:
         self.edition_history.add(log)
         print('Аудиозапись успешно обрезана\n')
 
-    def merge(self):
-        pass
+    def concat(self):
+        second_audio = read_audio(True)
+        if second_audio == 'm':
+            self.back_to_menu()
+        else:
+            print('Аудиотрек успешно загружен')
+        first_audio = self.audio
+        in_order = is_in_order()
+        if not in_order:
+            first_audio = second_audio
+            second_audio = self.audio
+
+        proc = subprocess.Popen(['ffmpeg', '-loglevel', '-8', '-i', first_audio, '-i', second_audio,
+                                 '-filter_complex', '[0:a][1:a]concat=n=2:v=0:a=1', self.output_name])
+        proc.wait()
+        log = Log(Actions.concat, names=[first_audio, second_audio])
+        self.edition_history.add(log)
+        print(f'Аудиозаписи {first_audio}, {second_audio} успешно склеены!')
 
     def reverse(self):
         proc = subprocess.Popen(['ffmpeg', '-loglevel', '-8', '-i', self.audio, '-af',
@@ -117,7 +134,6 @@ class AudioEditor:
             self.audio = audio
             self.edition_history = EditionHistory(self.audio)
             print('Аудиотрек успешно загружен\n')
-
 
     def edition(self):
         self.editing = True

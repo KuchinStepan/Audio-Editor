@@ -5,7 +5,7 @@ class Actions(enum.Enum):
     volume = 1
     speed = 2
     trim = 3
-    merge = 4
+    concat = 4
     reverse = 5
     partial = 6
 
@@ -34,7 +34,7 @@ class Log:
                     result = f'Аудиозапись обрезана с {start} по {end}'
                 case Actions.reverse:
                     result = f'Реверс аудиозаписи'
-                case Actions.merge:
+                case Actions.concat:
                     names = ', '.join(self.values['names'])
                     result = f'Склеены аудиозаписи: {names}'
                 case Actions.partial:
