@@ -1,111 +1,12 @@
 import subprocess
 import pathlib
 import ffmpeg
-import datetime
+from audio_editor_dialogs import *
 from audio_data import *
 
 
 inp = 'C:\\Users\\Степан\\Desktop\\Python\\Audio-Editor\\test.mp3'
 output = 'C:\\Users\\Степан\\Desktop\\Python\\Audio-Editor\\test_1.mp3'
-
-
-def show_commands():
-    print('s    - Начать редактирование')
-    print('l    - Продолжить незавершенное редактирование')
-    print('0    - Завершить работу')
-
-
-def show_edition_commands():
-    print('m   - Вернуться в главное меню')
-    print('0   - Завершить работу')
-    print('1   - Изменить громкость')
-    print('2   - Изменить скорость')
-    print('3   - Обрезать аудиозапись')
-    print('4   - Склеить фрагменты')
-    print('5   - Изменить конкретную часть текущего аудио')
-    print('r   - «Развернуть» аудиозапись (реверс)')
-    print('hs  - Просмотреть историю изменений')
-    # print('s   - Сохранить аудио')
-
-
-def read_command(commands):
-    while True:
-        command = input()
-        if command.lower() in commands:
-            return command
-        else:
-            print('Неверно введена команда')
-
-
-def _read_speed():
-    success = False
-    speed = 1.0
-    while not success:
-        try:
-            print('Введите новую скорость воспроизведения в диапозоне от 0.5 до 2.0')
-            speed = float(input())
-        except ValueError:
-            print('Неверно введено значение! (Попробуйте заменить «,» на «.»)')
-        else:
-            if 0.5 <= speed <= 2.0:
-                success = True
-            else:
-                print('Число вне диапозона!')
-    return speed
-
-
-def _read_volume():
-    success = False
-    volume = 1.0
-    print('Текущая громкость: 1.0')
-    while not success:
-        try:
-            print('Введите новую громкость воспроизведения (значение >= 0)')
-            volume = float(input())
-        except ValueError:
-            print('Неверно введено значение! (Попробуйте заменить «,» на «.»)')
-        else:
-            if volume > 0:
-                success = True
-            else:
-                print('Число вне диапозона!')
-    return volume
-
-
-def _read_time(message, limit):
-    success = False
-    time = '00:00:00'
-    while not success:
-        try:
-            print(f'{message}\nФормат - hh:mm:ss или hh:mm:ss.ms')
-            time = input().split('.')
-            parsed_time = datetime.time.fromisoformat(time[0])
-        except ValueError:
-            print('Неверно введено значение!')
-        else:
-            right_format = False
-            ms = 0
-            if len(time) == 1:
-                right_format = True
-            elif len(time) == 2:
-                try:
-                    ms = int(time[1])
-                    right_format = True
-                except ValueError:
-                    print('Неверно введено значение!')
-            elif len(time) > 2:
-                print('Неверно введено значение!')
-
-            if right_format:
-                timedelta = datetime.timedelta(hours=parsed_time.hour, minutes=parsed_time.minute,
-                                               seconds=parsed_time.second, milliseconds=ms * 100)
-                seconds = timedelta.total_seconds()
-
-                if seconds <= limit:
-                    success = True
-                else:
-                    print('Неверно указан диапазон!')
-    return '.'.join(time)
 
 
 def get_length(audio):
@@ -161,7 +62,7 @@ class AudioEditor:
         print('Приложение успешно завершило работу')
 
     def change_volume(self):
-        volume = _read_volume()
+        volume = read_volume()
         proc = subprocess.Popen(['ffmpeg', '-loglevel', '-8', '-i', self.audio, '-af',
                                  f'volume={volume}', self.output_name])
         proc.wait()
@@ -170,7 +71,7 @@ class AudioEditor:
         print('Громкость успешно изменена\n')
 
     def change_speed(self):
-        speed = _read_speed()
+        speed = read_speed()
         proc = subprocess.Popen(['ffmpeg', '-loglevel', '-8', '-i', self.audio, '-af',
                                  f'atempo={speed}', self.output_name])
         proc.wait()
@@ -181,8 +82,8 @@ class AudioEditor:
     def trim(self):
         length = get_length(self.audio)
         time = datetime.timedelta(seconds=int(length), milliseconds=round(length % 1 * 1000))
-        start = _read_time(f'Введите время начала (общее время аудио: {time})', length)
-        end = _read_time(f'Введите время конца (общее время аудио: {time})', length)
+        start = read_time(f'Введите время начала (общее время аудио: {time})', length)
+        end = read_time(f'Введите время конца (общее время аудио: {time})', length)
         proc = subprocess.Popen(['ffmpeg', '-loglevel', '-8', '-ss', start, '-i', self.audio, '-to',
                                  end, self.output_name])
         proc.wait()
