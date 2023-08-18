@@ -18,7 +18,7 @@ def show_edition_commands():
     print('5   - Изменить конкретную часть текущего аудио')
     print('r   - «Развернуть» аудиозапись (реверс)')
     print('hs  - Просмотреть историю изменений')
-    # print('s   - Сохранить аудио')
+    print('s   - Сохранить аудио')
 
 
 def read_command(commands):
@@ -77,7 +77,7 @@ def read_volume():
         except ValueError:
             print('Неверно введено значение! (Попробуйте заменить «,» на «.»)')
         else:
-            if volume > 0:
+            if volume >= 0:
                 success = True
             else:
                 print('Число вне диапозона!')
@@ -101,7 +101,7 @@ def read_time(message, limit):
                 right_format = True
             elif len(time) == 2:
                 try:
-                    ms = int(time[1])
+                    ms = float(f'0.{time[1]}')
                     right_format = True
                 except ValueError:
                     print('Неверно введено значение!')
@@ -110,9 +110,8 @@ def read_time(message, limit):
 
             if right_format:
                 timedelta = datetime.timedelta(hours=parsed_time.hour, minutes=parsed_time.minute,
-                                               seconds=parsed_time.second, milliseconds=ms * 100)
+                                               seconds=parsed_time.second, milliseconds=ms * 1000)
                 seconds = timedelta.total_seconds()
-
                 if seconds <= limit:
                     success = True
                 else:

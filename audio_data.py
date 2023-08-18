@@ -8,10 +8,12 @@ class Actions(enum.Enum):
     concat = 4
     reverse = 5
     partial = 6
+    save = 7
 
 
 class Log:
-    def __init__(self, action: Actions, **kwargs):
+    def __init__(self, action: Actions, name, **kwargs):
+        self.file_name = name
         self.action = action
         self.values = dict()
         for key in kwargs.keys():
@@ -43,6 +45,8 @@ class Log:
                     logs = '- ' + '\n- '.join(map(str, self.values['logs']))
                     result = f'В фрагменте с {start} по {end} следующие изменения:\n{logs}\n' \
                              f'__________________'
+                case Actions.save:
+                    result = 'Сохранение аудиозаписи'
         except KeyError:
             result = 'Ошибка лога'
         self.preview = result
@@ -66,3 +70,6 @@ class EditionHistory:
 
     def add(self, log: Log):
         self.history.append(log)
+
+    def pop(self):
+        return self.history.pop()
