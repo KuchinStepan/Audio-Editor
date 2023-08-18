@@ -2,6 +2,7 @@ import subprocess
 import os
 import shutil
 import ffmpeg
+from progress_saver import ProgressSaver
 from audio_editor_dialogs import *
 from audio_data import *
 
@@ -38,8 +39,8 @@ class AudioEditor:
         self.edition_history = EditionHistory('отсутствует')
 
         self.menu_commands = {
-            's': self.edition,
-            'l': 2,
+            's': self.first_edition,
+            'l': self.repeated_edition,
             '0': self.stop
         }
 
@@ -79,13 +80,21 @@ class AudioEditor:
         self.output_name = path + '_result.' + audio_format
         i = 1
         while os.path.exists(self.output_name):
-            self.output_name = path + f'_result({i})' + audio_format
+            self.output_name = path + f'_result({i}).' + audio_format
             i += 1
 
     def update_current_file(self, new_name):
         self.saved = False
         self.current_file = new_name
         self.bin.append(new_name)
+
+    def passive_saving(self):
+        print('Текущие изменения сохранены, вернутся к редактированию можно в меню')
+        saver = ProgressSaver()
+        old_audios = saver.delete_old()
+        for name in old_audios:
+            os.remove(name)
+        saver.add_unfinished(self.audio, self.edition_history)
 
     def menu(self):
         while self.running:
@@ -97,20 +106,12 @@ class AudioEditor:
 
     def back_to_menu(self):
         if not self.saved:
-            print('Аудиозапись не сохранена!')
-            print('0 - Все равно выйти из редактирования')
-            print('1 - Сохранить перед выходом')
-            print('2 - Остаться редактировать')
-            command = read_command(['0', '1'])
-            if command == '1':
-                self.save()
-                self.editing = False
-            elif command == '2':
-                return
-            else:
-                self.editing = False
+            self.passive_saving()
+        self.editing = False
 
     def stop(self):
+        if not self.saved:
+            self.passive_saving()
         self.editing = False
         self.running = False
         print('Приложение успешно завершило работу')
@@ -216,12 +217,36 @@ class AudioEditor:
 
     def clear_bin(self):
         for file in self.bin:
-            os.remove(file)
+            try:
+                os.remove(file)
+            except FileNotFoundError:
+                pass
         self.bin = []
+
+    def update_from_repeated(self, file):
+        saver = ProgressSaver()
+        edition_history = saver.pop(file)
+        self.audio = file
+        self.saved = False
+        self.current_file = edition_history.history[-1].file_name
+        self.edition_history = edition_history
+        for log in edition_history.history:
+            self.bin.append(log.file_name)
+
+    def repeated_edition(self):
+        saver = ProgressSaver()
+        unfinished_files = saver.get_all()
+        file = select_file(unfinished_files)
+        if file is not None:
+            self.update_from_repeated(file)
+            self.edition()
+
+    def first_edition(self):
+        self.load_audio()
+        self.edition()
 
     def edition(self):
         self.editing = True
-        self.load_audio()
         while self.editing:
             show_edition_commands()
             command = read_command(self.edition_commands)

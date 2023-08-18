@@ -49,6 +49,25 @@ def read_audio(for_merge=False):
             print(f'Аудиотрек {audio} не найден!')
 
 
+def select_file(filenames):
+    if len(filenames) == 0:
+        print('Нет несохраненных файлов')
+        return None
+    print('Выберите файл, с которым хотите продолжить работу')
+    success = False
+    while not success:
+        for i in range(len(filenames)):
+            print(f'{i+1} - {filenames[i]}')
+        try:
+            ans = int(input())
+            if 1 <= ans <= len(filenames):
+                return filenames[ans - 1]
+            else:
+                print('Неверно введено значение')
+        except ValueError:
+            print('Неверно введено значение')
+
+
 def read_speed():
     success = False
     speed = 1.0

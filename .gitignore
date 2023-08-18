@@ -156,6 +156,10 @@ cython_debug/
 *.exe
 *.mp3
 _t.py
+unsaved.txt
+progress.dir
+progress.dat
+progress.bak
 
 # PyCharm
 #  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
