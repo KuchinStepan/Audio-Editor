@@ -21,6 +21,16 @@ def show_edition_commands():
     print('s   - Сохранить аудио')
 
 
+def show_partial_edition_commands():
+    print('e   - Завершить частичное редактирование')
+    print('1   - Изменить громкость')
+    print('2   - Изменить скорость')
+    print('3   - Обрезать аудиозапись')
+    print('4   - Склеить с другой аудиозаписью')
+    print('r   - «Развернуть» аудиозапись (реверс)')
+    print('hs  - Просмотреть историю изменений')
+
+
 def read_command(commands):
     while True:
         command = input()

@@ -6,7 +6,6 @@ from progress_saver import ProgressSaver
 from audio_editor_dialogs import *
 from audio_data import *
 
-
 inp = 'C:\\Users\\Степан\\Desktop\\Python\\Audio-Editor\\test.mp3'
 output = 'C:\\Users\\Степан\\Desktop\\Python\\Audio-Editor\\test_1.mp3'
 APPDATA = 'appdata'
@@ -26,13 +25,43 @@ def _create_appdata():
         os.mkdir(APPDATA)
 
 
+def set_supportive_editor(editor, file_name):
+    editor.current_file = file_name
+    editor.audio = file_name
+    editor.edition_history = EditionHistory('(частичное редактирование)')
+    editor.partial_editing = True
+    editor.edition_commands = {
+        'e': editor.stop,
+        '1': editor.change_volume,
+        '2': editor.change_speed,
+        '3': editor.trim,
+        '4': editor.concat,
+        'r': editor.reverse,
+        'hs': editor.show_history
+    }
+
+
+def trim_function(start, end, inp, out):
+    proc = subprocess.Popen(['ffmpeg', '-loglevel', '-8', '-ss', start, '-i', inp, '-to',
+                             end, out])
+    proc.wait()
+
+
+def concat_function(first_audio, second_audio, out):
+    proc = subprocess.Popen(['ffmpeg', '-loglevel', '-8', '-i', first_audio, '-i', second_audio,
+                             '-filter_complex', '[0:a][1:a]concat=n=2:v=0:a=1', out])
+    proc.wait()
+
+
 class AudioEditor:
     def __init__(self):
         _create_appdata()
         self.running = False
         self.editing = False
+        self.partial_editing = False
         self.current_file = None
         self.audio = None
+        self.format = 'mp3'
         self.bin = []
         self.output_name = output
         self.saved = True
@@ -51,7 +80,7 @@ class AudioEditor:
             '2': self.change_speed,
             '3': self.trim,
             '4': self.concat,
-
+            '5': self.partial_edition,
             'r': self.reverse,
             'hs': self.show_history,
             's': self.save
@@ -92,6 +121,7 @@ class AudioEditor:
         print('Текущие изменения сохранены, вернутся к редактированию можно в меню')
         saver = ProgressSaver()
         old_audios = saver.delete_old()
+        self.clear_bin(exceptional_files=[self.edition_history.history[-1].file_name])
         for name in old_audios:
             os.remove(name)
         saver.add_unfinished(self.audio, self.edition_history)
@@ -105,16 +135,17 @@ class AudioEditor:
             function()
 
     def back_to_menu(self):
-        if not self.saved:
+        if not self.saved and not self.partial_editing:
             self.passive_saving()
         self.editing = False
 
     def stop(self):
-        if not self.saved:
+        if not self.saved and not self.partial_editing:
             self.passive_saving()
         self.editing = False
         self.running = False
-        print('Приложение успешно завершило работу')
+        if not self.partial_editing:
+            print('Приложение успешно завершило работу')
 
     def change_volume(self):
         out = self._get_current_output_filename(Actions.volume)
@@ -144,9 +175,7 @@ class AudioEditor:
         time = datetime.timedelta(seconds=int(length), milliseconds=round(length % 1 * 1000))
         start = read_time(f'Введите время начала (общее время аудио: {time})', length)
         end = read_time(f'Введите время конца (общее время аудио: {time})', length)
-        proc = subprocess.Popen(['ffmpeg', '-loglevel', '-8', '-ss', start, '-i', self.current_file, '-to',
-                                 end, out])
-        proc.wait()
+        trim_function(start, end, self.current_file, out)
         self.update_current_file(out)
         log = Log(Actions.trim, out, start=start, end=end)
         self.edition_history.add(log)
@@ -165,13 +194,41 @@ class AudioEditor:
             first_audio = second_audio
             second_audio = self.current_file
 
-        proc = subprocess.Popen(['ffmpeg', '-loglevel', '-8', '-i', first_audio, '-i', second_audio,
-                                 '-filter_complex', '[0:a][1:a]concat=n=2:v=0:a=1', out])
-        proc.wait()
+        concat_function(first_audio, second_audio, out)
         self.update_current_file(out)
         log = Log(Actions.concat, out, names=[first_audio, second_audio])
         self.edition_history.add(log)
         print(f'Аудиозаписи {first_audio}, {second_audio} успешно склеены!')
+
+    def partial_edition(self):
+        result_out = self._get_current_output_filename(Actions.partial)
+        length = get_length(self.current_file)
+        time = datetime.timedelta(seconds=int(length), milliseconds=round(length % 1 * 1000))
+        start = read_time(f'Введите время начала фрагмента (общее время аудио: {time})', length)
+        end = read_time(f'Введите время конца фрагмента (общее время аудио: {time})', length)
+        first_part = self._get_current_output_filename(Actions.partial, 1)
+        second_part = self._get_current_output_filename(Actions.partial, 2)
+        third_part = self._get_current_output_filename(Actions.partial, 3)
+        trim_function('00:00:00', start, self.current_file, first_part)
+        trim_function(start, end, self.current_file, second_part)
+        trim_function(end, str(time), self.current_file, third_part)
+        editor = AudioEditor()
+        set_supportive_editor(editor, second_part)
+        editor.edition(show_partial_edition_commands)
+
+        concat_out_1 = APPDATA + '\\part1.' + self.format
+
+        concat_function(first_part, editor.current_file, concat_out_1)
+        concat_function(concat_out_1, third_part, result_out)
+
+        audios_bin = [first_part, second_part, third_part, concat_out_1]
+        audios_bin += list(map(lambda x: x.file_name, editor.edition_history.history))
+        self.clear_bin(audios_bin)
+
+        self.update_current_file(result_out)
+        log = Log(Actions.partial, result_out, start=start, end=end, logs=editor.edition_history.history)
+        self.edition_history.add(log)
+        print(f'Фрагмент аудиозаписи успешно изменен!')
 
     def reverse(self):
         out = self._get_current_output_filename(Actions.reverse)
@@ -207,6 +264,7 @@ class AudioEditor:
         return
 
         audio = read_audio()
+        self.format = audio.split('.')[-1]
         if audio == 'm':
             self.back_to_menu()
         else:
@@ -215,8 +273,12 @@ class AudioEditor:
             self.edition_history = EditionHistory(self.audio)
             print('Аудиотрек успешно загружен\n')
 
-    def clear_bin(self):
-        for file in self.bin:
+    def clear_bin(self, files=None, exceptional_files=[]):
+        if files is None:
+            files = self.bin
+        for file in files:
+            if file in exceptional_files:
+                continue
             try:
                 os.remove(file)
             except FileNotFoundError:
@@ -245,13 +307,13 @@ class AudioEditor:
         self.load_audio()
         self.edition()
 
-    def edition(self):
+    def edition(self, edition_commands=show_edition_commands):
         self.editing = True
         while self.editing:
-            show_edition_commands()
+            edition_commands()
             command = read_command(self.edition_commands)
             function = self.edition_commands[command]
             function()
-        if self.saved:
+        if self.saved and not self.partial_editing:
             self.clear_bin()
         self.audio = None
