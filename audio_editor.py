@@ -6,8 +6,7 @@ from progress_saver import ProgressSaver
 from audio_editor_dialogs import *
 from audio_data import *
 
-inp = 'C:\\Users\\Степан\\Desktop\\Python\\Audio-Editor\\test.mp3'
-output = 'C:\\Users\\Степан\\Desktop\\Python\\Audio-Editor\\test_1.mp3'
+
 APPDATA = 'appdata'
 ACTIONS_NAME = {Actions.speed: 's', Actions.volume: 'v', Actions.trim: 't',
                 Actions.concat: 'c', Actions.reverse: 'r', Actions.partial: 'p'}
@@ -63,7 +62,7 @@ class AudioEditor:
         self.audio = None
         self.format = 'mp3'
         self.bin = []
-        self.output_name = output
+        self.output_name = None
         self.saved = True
         self.edition_history = EditionHistory('отсутствует')
 

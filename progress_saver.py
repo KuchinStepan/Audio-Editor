@@ -1,4 +1,3 @@
-import os
 import shelve
 import os
 
