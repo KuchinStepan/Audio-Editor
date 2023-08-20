@@ -258,11 +258,6 @@ class AudioEditor:
             print('Аудиозапись не изменена')
 
     def load_audio(self):
-        self.current_file = 'test.mp3'
-        self.audio = self.current_file
-        self.edition_history = EditionHistory(self.current_file)
-        return
-
         audio = read_audio()
         self.format = audio.split('.')[-1]
         if audio == 'm':
