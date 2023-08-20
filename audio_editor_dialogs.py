@@ -60,6 +60,7 @@ def read_audio(for_merge=False):
 
 
 def select_file(filenames):
+    filenames = list(filenames)
     if len(filenames) == 0:
         print('Нет несохраненных файлов')
         return None

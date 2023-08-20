@@ -316,4 +316,3 @@ class AudioEditor:
             function()
         if self.saved and not self.partial_editing:
             self.clear_bin()
-        self.audio = None
