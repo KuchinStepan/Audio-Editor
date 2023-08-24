@@ -10,6 +10,7 @@ from audio_data import *
 APPDATA = 'appdata'
 ACTIONS_NAME = {Actions.speed: 's', Actions.volume: 'v', Actions.trim: 't',
                 Actions.concat: 'c', Actions.reverse: 'r', Actions.partial: 'p'}
+RESULT_PATH = 'results'
 
 
 def get_length(audio):
@@ -22,6 +23,12 @@ def _create_appdata():
     path = pathlib.Path(APPDATA)
     if not path.exists():
         os.mkdir(APPDATA)
+
+
+def _create_result_folder():
+    path = pathlib.Path(RESULT_PATH)
+    if not path.exists():
+        os.mkdir(RESULT_PATH)
 
 
 def set_supportive_editor(editor, file_name):
@@ -55,6 +62,7 @@ def concat_function(first_audio, second_audio, out):
 class AudioEditor:
     def __init__(self):
         _create_appdata()
+        _create_result_folder()
         self.running = False
         self.editing = False
         self.partial_editing = False
@@ -81,6 +89,7 @@ class AudioEditor:
             '4': self.concat,
             '5': self.partial_edition,
             'r': self.reverse,
+            'p': self.play,
             'hs': self.show_history,
             's': self.save
         }
@@ -105,10 +114,10 @@ class AudioEditor:
     def set_output_filename(self):
         path = self.audio.split('.')[-2]
         audio_format = self.audio.split('.')[-1]
-        self.output_name = path + '_result.' + audio_format
+        self.output_name = f'{RESULT_PATH}\\{path}_result.{audio_format}'
         i = 1
         while os.path.exists(self.output_name):
-            self.output_name = path + f'_result({i}).' + audio_format
+            self.output_name = f'{RESULT_PATH}\\{path}_result({i}).{audio_format}'
             i += 1
 
     def update_current_file(self, new_name):
@@ -238,6 +247,10 @@ class AudioEditor:
         log = Log(Actions.reverse, out)
         self.edition_history.add(log)
         print('Аудиозапись «развернута»\n')
+
+    def play(self):
+        proc = subprocess.Popen(['ffplay', '-loglevel', '-8', self.current_file])
+        proc.wait()
 
     def show_history(self):
         self.edition_history.show()
