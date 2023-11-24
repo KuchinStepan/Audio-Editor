@@ -22,7 +22,7 @@ class TestAudioData(unittest.TestCase):
 
     def testSetOutputName(self):
         self.editor.set_output_filename()
-        expected = 'test_result.mp3'
+        expected = 'results\\test_result.mp3'
         self.assertEqual(expected, self.editor.output_name)
 
     def testUpdateCurrentFile(self):

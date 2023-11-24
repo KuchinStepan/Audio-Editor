@@ -47,6 +47,18 @@ def set_supportive_editor(editor, file_name):
     }
 
 
+def speed_function(file_name, speed, out):
+    proc = subprocess.Popen(['ffmpeg', '-loglevel', '-8', '-i', file_name, '-af',
+                             f'atempo={speed}', out])
+    proc.wait()
+
+
+def volume_function(file_name, volume, out):
+    proc = subprocess.Popen(['ffmpeg', '-loglevel', '-8', '-i', file_name, '-af',
+                             f'volume={volume}', out])
+    proc.wait()
+
+
 def trim_function(start, end, inp, out):
     proc = subprocess.Popen(['ffmpeg', '-loglevel', '-8', '-ss', start, '-i', inp, '-to',
                              end, out])
@@ -158,9 +170,8 @@ class AudioEditor:
     def change_volume(self):
         out = self._get_current_output_filename(Actions.volume)
         volume = read_volume()
-        proc = subprocess.Popen(['ffmpeg', '-loglevel', '-8', '-i', self.current_file, '-af',
-                                 f'volume={volume}', out])
-        proc.wait()
+        volume_function(self.current_file, volume, out)
+
         self.update_current_file(out)
         log = Log(Actions.volume, out, volume=volume)
         self.edition_history.add(log)
@@ -169,9 +180,8 @@ class AudioEditor:
     def change_speed(self):
         out = self._get_current_output_filename(Actions.speed)
         speed = read_speed()
-        proc = subprocess.Popen(['ffmpeg', '-loglevel', '-8', '-i', self.current_file, '-af',
-                                 f'atempo={speed}', out])
-        proc.wait()
+        speed_function(self.current_file, speed, out)
+
         self.update_current_file(out)
         log = Log(Actions.speed, out, speed=speed)
         self.edition_history.add(log)
